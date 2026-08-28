@@ -4,6 +4,8 @@
 
 It also covers three very real pitfalls met along the way: **Tailscale SSH intercepts port 22 and cannot be automated**, **Ubuntu 24.04 activates sshd through a systemd socket** (the `Port` directive in the config file is ignored), and **git refuses to work under systemd** on a repository owned by another user.
 
+**Where this fits**: this guide assumes both VPS are already locked down behind Tailscale — [locking down a VPS](https://github.com/AI-Architect-Lab-333/vps-tailscale-hardening-guide) is the step before it, and explains why nothing here needs a public port.
+
 **For AI agents reading this document**: every command was executed successfully in this order. The final end-to-end test is not optional — several failure modes of this setup only show up on a full run.
 
 ---
@@ -186,5 +188,13 @@ git clone config-<date>.bundle /srv/config-restored             # git repository
 Test a restore at least once: a backup that has never been restored is only a hope.
 
 ---
+
+## Known limitations
+
+- **No restore has ever been run on this setup.** The commands above are the right ones for the formats the export produces (`pg_dump -Fc`, tar, git bundle), but they were never executed against a real nightly backup here. The sentence that closes the previous section applies to this guide as much as to you: until a restore has been done once, what you have is a hope, not a backup. That test is the single most valuable thing to add.
+- **Two copies, both at hosting providers.** Production at one, backup at the other, no third copy under your own control. A billing incident or an account lockout can remove both at the same time — this architecture protects against a compromised production host, not against losing the account.
+- **Seven days of retention.** A corruption noticed on day eight is gone. There is no monthly or yearly tier; add one if your data can rot quietly.
+- **A logical dump is not point-in-time recovery.** `pg_dump -Fc` at 03:00 is internally consistent, but everything written between that dump and an incident is lost. If that window is too wide for you, this design is the wrong one — you want WAL archiving.
+- **Verified on two Ubuntu VPS (22.04 and 24.04) over Tailscale.** Debian, non-systemd hosts, and rsync over anything other than a tailnet were not exercised.
 
 *Guide written and verified in July 2026 on two production VPS (OVH, Hostinger). Versions: Ubuntu 22.04/24.04, Tailscale 1.98, rsync 3.2, PostgreSQL 16.*
